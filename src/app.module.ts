@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
+import { User } from './users/entities/users.entity';
+import { CoordonneesBancaires } from './users/entities/coordonnees-bancaires.entity';
 
 @Module({
   imports: [
@@ -16,6 +18,11 @@ import { UsersModule } from './users/users.module';
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_DATABASE,
+      entities: [
+        User,
+        CoordonneesBancaires,
+        // ... SessionFormation, HeuresFormation, PaiementCoordination, MemoireReglement
+      ],
       autoLoadEntities: true,
       synchronize: true,
     }),

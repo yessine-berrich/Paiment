@@ -1,4 +1,6 @@
 export enum userRole {
-    ADMIN = 'admin',
-    USER = 'user',
+  ADMIN = 'ADMIN',
+  COMPTABLE = 'COMPTABLE',
+  FORMATEUR = 'FORMATEUR',
+  CORDINATEUR = 'CORDINATEUR',
 }

@@ -1,25 +1,21 @@
-import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Length, Min, MinLength } from "class-validator";
-import { userRole } from "utils/constants";
+import { IsEmail, IsOptional, IsString, IsNotEmpty } from 'class-validator';
 
 export class UpdateUserDto {
+  @IsOptional()
+  @IsEmail()
+  email?: string;
 
-    @IsNumber()
-    @IsNotEmpty()
-    @Min(0)
-    userId: number;
+  @IsOptional()
+  @IsString()
+  password?: string;
 
-    @IsString()
-    @Length(2, 50)
-    @IsOptional()
-    username?: string;
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  rib?: string; // Mise à jour du RIB
 
-    @IsString()
-    @MinLength(8)
-    @IsNotEmpty()
-    @IsOptional()
-    password?: string;
-
-    @IsEnum(userRole, { message: 'Role must be either admin or user' })
-    @IsOptional()
-    role?: string;
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  banque?: string; // Mise à jour de la Banque
 }
