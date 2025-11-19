@@ -1,4 +1,5 @@
-import { IsString, IsEmail, IsNotEmpty } from 'class-validator';
+import { IsString, IsEmail, IsNotEmpty, IsEnum } from 'class-validator';
+import { userRole } from 'utils/constants';
 
 export class RegisterDto {
   @IsNotEmpty()
@@ -29,4 +30,8 @@ export class RegisterDto {
   @IsNotEmpty()
   @IsString()
   banque: string;
+
+  @IsNotEmpty()
+  @IsEnum(userRole) // Valide que la valeur fournie est une des valeurs de l'énum
+  role?: userRole;
 }

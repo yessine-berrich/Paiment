@@ -2,15 +2,16 @@ import { UsersService } from '../users.service';
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { Observable } from 'rxjs';
 import { JwtPayloadType } from 'utils/types';
 import { Reflector } from '@nestjs/core';
 import { userRole } from 'utils/constants';
+import { ROLES_KEY } from '../decorators/user-role.decorator';
 
 @Injectable()
 export class AuthRolesGuard implements CanActivate {
@@ -22,13 +23,15 @@ export class AuthRolesGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext) {
-    const roles: userRole[] = this.reflector.getAllAndOverride('roles', [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const roles: userRole[] = this.reflector.getAllAndOverride<userRole[]>(
+      ROLES_KEY,
+      [context.getHandler(), context.getClass()],
+    );
 
     if (!roles || roles.length === 0) {
-      return false; // No roles specified
+      throw new ForbiddenException(
+        'No roles defined for this route (access denied)',
+      ); // No roles specified 403 forbidden
     }
 
     const request = context.switchToHttp().getRequest();

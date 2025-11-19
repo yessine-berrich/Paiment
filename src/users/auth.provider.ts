@@ -25,7 +25,8 @@ export class AuthService {
 
   async register(registerDto: RegisterDto) {
     // 1. Récupérer les données
-    const { nom, prenom, email, password, n_cin, rib, banque } = registerDto;
+    const { nom, prenom, email, password, n_cin, rib, banque, role } =
+      registerDto;
 
     // 🚨 CORRECTION 1: Vérification si l'utilisateur existe DÉJÀ AVANT de créer/sauvegarder
     const existingUser = await this.userRepository.findOne({
@@ -46,7 +47,7 @@ export class AuthService {
       prenom,
       email,
       password: hashedPassword,
-      role: userRole.FORMATEUR,
+      role: role,
       est_actif: false,
     });
 
@@ -101,7 +102,6 @@ export class AuthService {
     return {
       message: "Inscription réussie. En attente d'activation.",
       user: userWithoutPassword,
-      token, // Le token est retourné, mais le compte est inactif
     };
   }
 

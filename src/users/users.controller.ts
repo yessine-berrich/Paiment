@@ -49,9 +49,9 @@ export class UsersController {
     return this.authService.getCurrentUser(payload.id);
   }
 
-  @Put('status') // Utilisation de PUT pour la mise à jour
-  @UseGuards(AuthRolesGuard) // 🚨 Assurez-vous d'avoir JwtAuthGuard
+  @Put('status')
   @Roles(userRole.ADMIN)
+  @UseGuards(AuthRolesGuard)
   async updateStatus(@Body() updateUserStatusDto: UpdateUserStatusDto) {
     return this.authService.updateStatus(updateUserStatusDto);
   }
