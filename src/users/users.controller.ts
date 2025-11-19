@@ -14,7 +14,7 @@ import {
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthGuard } from './guards/auth.guard';
-import { CurrentUser } from './decorators/current-user.decarator';
+import { CurrentPayload } from './decorators/current-payload.decorator';
 import type { JwtPayloadType } from 'utils/types';
 import { Roles } from './decorators/user-role.decorator';
 import { userRole } from 'utils/constants';
@@ -42,11 +42,18 @@ export class UsersController {
   }
 
   @Get('/current-user')
-  @UseGuards(AuthGuard)
-  // @UseInterceptors(ClassSerializerInterceptor)
-  getCurrentUser(@CurrentUser() payload: JwtPayloadType) {
-    // console.log('Get current user route handler called');
-    return this.authService.getCurrentUser(payload.id);
+  // Si vous utilisez AuthRolesGuard sans rôle, assurez-vous qu'il gère les rôles vides correctement
+  @Roles(
+    userRole.ADMIN,
+    userRole.COMPTABLE,
+    userRole.FORMATEUR,
+    userRole.COORDINATEUR,
+  )
+  @UseGuards(AuthGuard) // Utilisez le AuthGuard standard de Passport pour l'authentification simple
+  getCurrentUser(@CurrentPayload() payload: JwtPayloadType) {
+    // 🚨 Utilisation du nouveau décorateur
+    // Le service est appelé pour récupérer l'entité complète à partir de l'ID
+    return this.authService.getCurrentUser(payload.sub);
   }
 
   @Put('status')
@@ -83,14 +90,14 @@ export class UsersController {
     userRole.ADMIN,
     userRole.COMPTABLE,
     userRole.FORMATEUR,
-    userRole.CORDINATEUR,
+    userRole.COORDINATEUR,
   )
   // Si AuthRolesGuard est utilisé pour l'auth, pas besoin de @Roles()
   async updateCurrentUser(
-    @CurrentUser() payload: JwtPayloadType,
+    @CurrentPayload() payload: JwtPayloadType,
     @Body() updateUserDto: UpdateUserDto,
   ) {
-    return this.usersService.updateCurrentUser(payload.id, updateUserDto);
+    return this.usersService.updateCurrentUser(payload.sub, updateUserDto);
   }
 
   @Delete(':id')
@@ -98,5 +105,13 @@ export class UsersController {
   @Roles(userRole.ADMIN)
   async deleteUser(@Param('id', ParseIntPipe) id: number) {
     return this.authService.delete(id);
+  }
+
+  @Get('current-session')
+  @UseGuards(AuthRolesGuard)
+  @Roles(userRole.COORDINATEUR) // 🚨 Rôle de sécurité
+  async getCurrentSession(@CurrentPayload() payload: JwtPayloadType) {
+    // L'ID est extrait du token
+    return this.usersService.getCurrentSession(payload.sub);
   }
 }

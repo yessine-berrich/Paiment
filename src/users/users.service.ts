@@ -1,7 +1,8 @@
 import { userRole } from 'utils/constants';
 import {
   BadRequestException,
-  ForbiddenException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -10,20 +11,24 @@ import { User } from './entities/users.entity';
 import { Repository } from 'typeorm';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { JwtPayloadType } from 'utils/types';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { AuthService } from './auth.provider';
 import { UpdateUserStatusDto } from './dto/update-status.dto';
 import { CoordonneesBancaires } from './entities/coordonnees-bancaires.entity';
+import { Session } from 'src/session/entities/session.entity';
+import { SessionService } from '../session/session.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly authProvider: AuthService, // ajout
+    private readonly authProvider: AuthService,
     @InjectRepository(CoordonneesBancaires)
     private readonly bancaireRepository: Repository<CoordonneesBancaires>,
+
+    @Inject(forwardRef(() => SessionService))
+    private readonly sessionService: SessionService,
   ) {}
   async register(registerDto: RegisterDto) {
     return this.authProvider.register(registerDto);
@@ -33,12 +38,10 @@ export class UsersService {
     return this.authProvider.login(loginDto);
   }
 
-  async getCurrentUser(id: number): Promise<User> {
-    const user = await this.userRepository.findOne({ where: { id } });
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    return user;
+  async getCurrentUser(id: number): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: { id: id }, // relations: ['coordonneesBancaires'], // Si nécessaire
+    });
   }
 
   async updateStatus(updateUserStatusDto: UpdateUserStatusDto) {
@@ -80,7 +83,7 @@ export class UsersService {
    * @param id L'identifiant de l'utilisateur.
    * @returns Promise<User> L'utilisateur trouvé.
    */
-  async getUserById(id: number): Promise<User> {
+  async getUserById(id: number): Promise<User | null> {
     const user = await this.userRepository.findOne({ where: { id } });
 
     if (!user) {
@@ -189,5 +192,27 @@ export class UsersService {
         `Erreur de suppression, utilisateur ${id} introuvable.`,
       );
     }
+  }
+
+  /**
+   * Récupère la session actuelle pour le coordinateur spécifié.
+   * La session courante est définie comme la session active (non terminée).
+   * @param coordinateurId L'ID du coordinateur (issu du JWT).
+   * @returns Promise<Session> La session trouvée ou une erreur.
+   */
+  async getCurrentSession(coordinateurId: number): Promise<Session> {
+    // 🚨 NOTE: La logique de "courant" doit être implémentée dans SessionService
+
+    // Pour l'instant, appelons une fonction qui trouve la session par coordinateur ID
+    // Nous allons créer cette méthode findSessionByCoordinateur dans SessionService.
+    const session =
+      await this.sessionService.findSessionByCoordinateur(coordinateurId);
+
+    if (!session) {
+      throw new NotFoundException(
+        `Aucune session active n'a été trouvée pour ce coordinateur.`,
+      );
+    }
+    return session;
   }
 }

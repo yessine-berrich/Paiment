@@ -148,6 +148,7 @@ export class AuthService {
     return {
       success: true,
       token,
+      user: userWithoutPassword,
     };
   }
 

@@ -4,6 +4,8 @@ import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
 import { User } from './users/entities/users.entity';
 import { CoordonneesBancaires } from './users/entities/coordonnees-bancaires.entity';
+import { SessionModule } from './session/session.module';
+import { Session } from './session/entities/session.entity';
 
 @Module({
   imports: [
@@ -21,11 +23,13 @@ import { CoordonneesBancaires } from './users/entities/coordonnees-bancaires.ent
       entities: [
         User,
         CoordonneesBancaires,
+        Session,
         // ... SessionFormation, HeuresFormation, PaiementCoordination, MemoireReglement
       ],
       autoLoadEntities: true,
       synchronize: true,
     }),
+    SessionModule,
   ],
 })
 export class AppModule {}

@@ -1,6 +1,6 @@
 export type JwtPayloadType = {
-  id: number;
-  userRole: string;
+  sub: number;
+  role: string;
 };
 
 export type AccessTokenType = {

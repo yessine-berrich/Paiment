@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
@@ -7,9 +7,11 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthService } from './auth.provider';
 import { CoordonneesBancaires } from './entities/coordonnees-bancaires.entity';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { SessionModule } from '../session/session.module';
 @Module({
   imports: [
     // 🚨 CORRECTION : AJOUTER CoordonneesBancaires
+    forwardRef(() => SessionModule),
     TypeOrmModule.forFeature([User, CoordonneesBancaires]),
     JwtModule.registerAsync({
       imports: [ConfigModule], // Assurez-vous que ConfigModule est accessible
@@ -22,6 +24,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
   ],
   providers: [UsersService, AuthService],
   controllers: [UsersController],
-  exports: [UsersService],
+  exports: [UsersService, AuthService, JwtModule],
 })
 export class UsersModule {}
