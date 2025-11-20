@@ -40,7 +40,10 @@ export class UsersService {
 
   async getCurrentUser(id: number): Promise<User | null> {
     return this.userRepository.findOne({
-      where: { id: id }, // relations: ['coordonneesBancaires'], // Si nécessaire
+      // 1. Correct the 'where' clause: id: id, or simply id
+      where: { id },
+      // 2. 'relations' must be a direct property of the options object
+      relations: ['coordonneesBancaires'],
     });
   }
 
