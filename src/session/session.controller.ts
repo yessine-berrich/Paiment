@@ -1,4 +1,14 @@
-import { Controller, Post, Body, UseGuards, Param, ParseIntPipe, Get, Patch, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Param,
+  ParseIntPipe,
+  Get,
+  Patch,
+  Delete,
+} from '@nestjs/common';
 import { SessionService } from './session.service';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { AuthRolesGuard } from 'src/users/guards/auth-roles.guard'; // 🚨 Si vous voulez protéger les routes

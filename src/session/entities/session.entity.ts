@@ -10,7 +10,7 @@ import { User } from '../../users/entities/users.entity';
 @Entity('session')
 export class Session {
   @PrimaryGeneratedColumn()
-  id_session: number;
+  id: number;
 
   @Column({ type: 'varchar', length: 255, nullable: false })
   promotion: string;

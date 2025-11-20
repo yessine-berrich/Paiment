@@ -54,7 +54,7 @@ export class SessionService {
 
   async findOne(id: number): Promise<Session> {
     const session = await this.sessionRepository.findOne({
-      where: { id_session: id },
+      where: { id: id },
       relations: ['coordinateur'],
     });
     if (!session) {
@@ -68,7 +68,7 @@ export class SessionService {
     updateSessionDto: UpdateSessionDto,
   ): Promise<Session> {
     const session = await this.sessionRepository.preload({
-      id_session: id,
+      id: id,
       ...updateSessionDto,
     });
     if (!session) {
