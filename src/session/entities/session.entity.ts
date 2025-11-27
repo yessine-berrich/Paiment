@@ -4,8 +4,10 @@ import {
   Column,
   ManyToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { User } from '../../users/entities/users.entity';
+import { SessionFormateur } from './session-formateur.entity';
 
 @Entity('session')
 export class Session {
@@ -39,4 +41,7 @@ export class Session {
   @ManyToOne(() => User)
   @JoinColumn({ name: 'id_coordinateur' })
   coordinateur: User;
+
+  @OneToMany(() => SessionFormateur, (sessionFormateur) => sessionFormateur.session)
+  sessionFormateurs: SessionFormateur[];
 }

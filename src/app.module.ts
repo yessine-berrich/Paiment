@@ -1,3 +1,5 @@
+// src/app.module.ts
+
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
@@ -6,6 +8,8 @@ import { User } from './users/entities/users.entity';
 import { CoordonneesBancaires } from './users/entities/coordonnees-bancaires.entity';
 import { SessionModule } from './session/session.module';
 import { Session } from './session/entities/session.entity';
+// 🚨 IMPORTEZ LA NOUVELLE ENTITÉ DE JOINTURE
+import { SessionFormateur } from './session/entities/session-formateur.entity'; // Assurez-vous que le chemin est correct
 
 @Module({
   imports: [
@@ -24,9 +28,12 @@ import { Session } from './session/entities/session.entity';
         User,
         CoordonneesBancaires,
         Session,
-        // ... SessionFormation, HeuresFormation, PaiementCoordination, MemoireReglement
+        // 🚨 AJOUT DE LA NOUVELLE ENTITÉ ICI
+        SessionFormateur,
+        // ... autres entités
       ],
-      autoLoadEntities: true,
+      // autoLoadEntities: true, // Si vous utilisez autoLoadEntities, vous n'avez pas besoin de la liste complète 'entities',
+      // mais il est plus sûr de la lister explicitement si vous n'êtes pas certain de la configuration de votre projet.
       synchronize: true,
     }),
     SessionModule,

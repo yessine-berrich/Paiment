@@ -6,28 +6,42 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
+// 🚨 CORRECTION: Ajout de 'In' pour la recherche multi-ID
+import { LessThanOrEqual, MoreThanOrEqual, Repository, In } from 'typeorm'; 
 import { Session } from './entities/session.entity';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
 import { UsersService } from '../users/users.service';
-import { userRole } from 'utils/constants';
+import { userRole } from 'utils/constants'; 
+import { SessionFormateur } from '../session/entities/session-formateur.entity'; 
+
+// 💡 DÉCLARATION D'UN TYPE POUR LES DONNÉES D'AFFECTATION (Résout TS2345/TS2339)
+type SessionFormateurData = {
+    id_session: number;
+    id_formateur: number;
+};
 
 @Injectable()
 export class SessionService {
   constructor(
     @InjectRepository(Session)
     private sessionRepository: Repository<Session>,
+    
+    @InjectRepository(SessionFormateur)
+    private sessionFormateurRepository: Repository<SessionFormateur>,
+
     @Inject(forwardRef(() => UsersService))
     private readonly usersService: UsersService,
   ) {}
 
+  // -----------------------------------------------------------
+  // CRUD STANDARD
+  // -----------------------------------------------------------
+
   async create(createSessionDto: CreateSessionDto): Promise<Session> {
     const { id_coordinateur } = createSessionDto;
 
-    // 1. Récupérer l'utilisateur pour vérifier son rôle
     const coordinateur = await this.usersService.getUserById(id_coordinateur);
-    // NOTE: Si vous n'avez pas de findUserById, utilisez findOneById, ou créez cette méthode.
 
     if (!coordinateur) {
       throw new NotFoundException(
@@ -35,27 +49,26 @@ export class SessionService {
       );
     }
 
-    // 2. Vérifier si l'utilisateur a le rôle COORDINATEUR
-    // (Utilisez l'énumération corrigée COORDINATEUR)
     if (coordinateur.role !== userRole.COORDINATEUR) {
       throw new BadRequestException(
         `L'utilisateur ID ${id_coordinateur} n'est pas un Coordinateur (rôle actuel: ${coordinateur.role}).`,
       );
     }
 
-    // 3. Sauvegarder la session si le rôle est valide
     const newSession = this.sessionRepository.create(createSessionDto);
     return this.sessionRepository.save(newSession);
   }
 
   async findAll(): Promise<Session[]> {
-    return this.sessionRepository.find({ relations: ['coordinateur'] }); // Récupérer le coordinateur
+    return this.sessionRepository.find({ 
+        relations: ['coordinateur', 'sessionFormateurs', 'sessionFormateurs.formateur'] 
+    }); 
   }
 
   async findOne(id: number): Promise<Session> {
     const session = await this.sessionRepository.findOne({
       where: { id: id },
-      relations: ['coordinateur'],
+      relations: ['coordinateur', 'sessionFormateurs', 'sessionFormateurs.formateur'],
     });
     if (!session) {
       throw new NotFoundException(`Session avec l'ID ${id} non trouvée.`);
@@ -84,17 +97,13 @@ export class SessionService {
     }
   }
 
-  /**
-   * Trouve la session courante basée sur l'ID du coordinateur et la période de temps.
-   * Une session est considérée comme 'courante' si la date d'aujourd'hui
-   * est entre date_debut et date_fin.
-   */
-  // ... (dans SessionService)
+  // -----------------------------------------------------------
+  // MÉTHODES SPÉCIFIQUES
+  // -----------------------------------------------------------
 
   async findSessionByCoordinateur(
     coordinateurId: number,
   ): Promise<Session | null> {
-    // Il est préférable d'utiliser new Date() directement. TypeORM gère la conversion SQL.
     const today = new Date();
 
     const session = await this.sessionRepository.findOne({
@@ -103,13 +112,84 @@ export class SessionService {
         date_debut: LessThanOrEqual(today),
         date_fin: MoreThanOrEqual(today),
       },
-      // 💡 Suggestion : Ajoutez une limite (LIMIT 1) si vous ne voulez qu'une session.
-      // Et un tri si vous avez plusieurs sessions courantes (par exemple, la plus récente).
       order: {
-        date_debut: 'DESC', // Chercher la session courante la plus récemment commencée
+        date_debut: 'DESC', 
       },
     });
 
     return session;
+  }
+
+  /**
+   * Affecte un ou plusieurs formateurs à une session.
+   */
+  async affecterFormateurs(
+    sessionId: number,
+    formateurIds: number[],
+  ): Promise<SessionFormateur[]> {
+    if (!formateurIds || formateurIds.length === 0) {
+      throw new BadRequestException('La liste des IDs de formateurs ne peut pas être vide.');
+    }
+
+    const session = await this.sessionRepository.findOneBy({ id: sessionId });
+    if (!session) {
+      throw new NotFoundException(`Session ID ${sessionId} non trouvée.`);
+    }
+
+    // 🚨 CORRECTION TS2345 : Typage explicite des tableaux
+    const errors: string[] = []; 
+    const affectationsToCreate: SessionFormateurData[] = []; 
+
+    // 2. Vérifier chaque Formateur et son rôle
+    await Promise.all(
+      formateurIds.map(async (id_formateur) => {
+        try {
+            const user = await this.usersService.getUserById(id_formateur);
+
+            if (!user) {
+              // Ligne 161 corrigée
+              errors.push(`Formateur ID ${id_formateur} non trouvé.`); 
+            } else if (user.role !== userRole.FORMATEUR) {
+              // Ligne 164 corrigée
+              errors.push(
+                `L'utilisateur ID ${id_formateur} n'est pas un Formateur (rôle actuel: ${user.role}).`,
+              );
+            } else {
+              // Ligne 168 corrigée
+              affectationsToCreate.push({ id_session: sessionId, id_formateur });
+            }
+        } catch (e) {
+             // Ligne 171 corrigée
+             errors.push(`Erreur lors de la vérification du Formateur ID ${id_formateur}.`);
+        }
+      }),
+    );
+    
+    if (errors.length > 0) {
+        throw new BadRequestException(errors.join(' | '));
+    }
+
+    // 3. Filtrer les affectations existantes
+    const existingAffectations = await this.sessionFormateurRepository.findBy({
+      id_session: sessionId,
+      // 🚨 CORRECTION TS2322 : Utilisation de l'opérateur 'In' pour rechercher plusieurs IDs
+      id_formateur: In(formateurIds), 
+    });
+
+    const existingFormateurIds = existingAffectations.map(a => a.id_formateur);
+    
+    // 🚨 CORRECTION TS2339 : 'data' est correctement typé
+    const newAffectationsData = affectationsToCreate.filter(
+      (data) => !existingFormateurIds.includes(data.id_formateur)
+    );
+    
+    if (newAffectationsData.length === 0) {
+      throw new BadRequestException('Tous les formateurs listés sont déjà affectés à cette session.');
+    }
+    
+    // 4. Créer et Sauvegarder les nouvelles affectations
+    const newAffectations = this.sessionFormateurRepository.create(newAffectationsData);
+    
+    return this.sessionFormateurRepository.save(newAffectations);
   }
 }
